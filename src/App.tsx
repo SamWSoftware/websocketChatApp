@@ -1,66 +1,152 @@
 import React, { useEffect, useState } from "react";
-import logo from "./logo.svg";
+
+import { Auth } from "aws-amplify";
 import "./App.css";
-import { JoinOrCreate } from "./views/JoinOrCreate";
-import { MessageInterface } from "./views/MessageInterface";
+import { Route, Link, Routes } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Home } from "./views/Home";
+import { MessageInterface } from "./views/MessageInterface";
+import { Button } from "@aws-amplify/ui-react";
 
-function App() {
-  const [typingUrl, setTypingUrl] = useState("");
+const websocketUrl = process.env.REACT_APP_WS_URL;
 
-  const [messages, setMessages] = useState<any[]>([]);
+function App(props: { signOut: ((data?: any) => void) | undefined }) {
+  const [messages, setMessages] = useState<Record<string, any[]>>({});
   const [socket, setSocket] = useState<WebSocket>();
-  const [joined, setJoined] = useState(false);
+  const [groups, setGroups] = useState<
+    { groupId: string; groupName: string }[]
+  >([]);
 
-  const websocketConnect = () => {
-    console.log("connect clicked");
-    if (!typingUrl) return;
+  const websocketConnect = async () => {
+    const user = await Auth.currentSession();
+    const token = user.getIdToken().getJwtToken();
 
-    const ws = new WebSocket(typingUrl);
+    const ws = new WebSocket(websocketUrl + `?token=${token}`);
 
     setSocket(ws);
   };
+
+  useEffect(() => {
+    websocketConnect();
+  }, []);
+
+  const listMyGroups = () => {
+    const data = {
+      action: "listMyGroups",
+    };
+    console.log("listing groups");
+    socket?.send(JSON.stringify(data));
+    return;
+  };
+
+  socket?.addEventListener("open", () => {
+    listMyGroups();
+  });
 
   socket?.addEventListener("message", function (event) {
     console.log("message Received ", event.data);
     try {
       const messageData = JSON.parse(event.data);
       console.log("messageData", messageData);
-      if (messageData.type == "err") {
-        toast(messageData.message);
-        setJoined(false);
-        return;
-      }
+      switch (messageData.type) {
+        case "err":
+          toast(messageData.message);
+          return;
+        case "message":
+          const { groupId, ...rest } = messageData;
 
-      setMessages([...messages, messageData]);
+          setMessages({
+            ...messages,
+            [groupId]: [...messages[groupId], rest],
+          });
+          return;
+        case "groupData":
+          setGroups(messageData.data);
+          return;
+        case "info":
+          toast(messageData.message);
+          return;
+        default:
+          toast(`unrecognised message type: ${messageData.type}`);
+      }
     } catch (e) {
-      setMessages([...messages, event.data]);
+      toast("unable to parse the event");
     }
   });
   socket?.addEventListener("close", function (event) {
     console.log("Websocket disconnected");
     setSocket(undefined);
-    setJoined(false);
   });
 
   const joinOrCreate = (data: {
-    name: string;
     action: string;
-    roomCode?: string;
+    groupName?: string;
+    groupId?: string;
   }) => {
     socket?.send(JSON.stringify(data));
-    setJoined(true);
+    setTimeout(() => {
+      listMyGroups();
+    }, 4000);
   };
 
-  const sendMessage = (message: string) => {
+  const sendMessage = ({
+    message,
+    groupId,
+  }: {
+    message: string;
+    groupId: string;
+  }) => {
     const data = {
       action: "message",
       message,
+      groupId,
     };
 
     socket?.send(JSON.stringify(data));
-    setMessages([...messages, { message, mine: true }]);
+    setMessages({
+      ...messages,
+      [groupId]: [
+        ...messages[groupId],
+        { message, mine: true, type: "message" },
+      ],
+    });
+  };
+
+  const handleRequest = ({
+    action,
+    requestId,
+    groupId,
+    userId,
+  }: {
+    action: "acceptJoinRequest" | "rejectJoinRequest";
+    requestId: string;
+    groupId: string;
+    userId: string;
+  }) => {
+    const data = {
+      action,
+      requestId,
+      groupId,
+      userId,
+    };
+
+    socket?.send(JSON.stringify(data));
+  };
+
+  const setInitialMessages = ({
+    initialMessages,
+    groupId,
+  }: {
+    initialMessages: any[];
+    groupId: string;
+  }) => {
+    setMessages({
+      ...messages,
+      [groupId]: [...initialMessages],
+    });
+
+    console.log({ storedMessages: messages });
   };
 
   return (
@@ -68,16 +154,42 @@ function App() {
       <ToastContainer />
       {!socket ? (
         <>
-          <input
-            onChange={(e) => setTypingUrl(e.target.value)}
-            value={typingUrl}
-          />
-          <button onClick={() => websocketConnect()}>Connect</button>
+          <h2>Connecting</h2>
         </>
-      ) : joined ? (
-        <MessageInterface messages={messages} sendMessage={sendMessage} />
       ) : (
-        <JoinOrCreate onSubmit={(data) => joinOrCreate(data)} />
+        <div>
+          <nav style={{ marginBottom: "50px" }}>
+            <Link to="">
+              <button>Home</button>
+            </Link>
+          </nav>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Home
+                  groups={groups}
+                  listMyGroups={listMyGroups}
+                  joinOrCreate={joinOrCreate}
+                />
+              }
+            />
+            {/*
+            <Route path="/creategroup/" element={<CreateGroup />} />
+          */}
+            <Route
+              path="/group/:id"
+              element={
+                <MessageInterface
+                  messages={messages}
+                  sendMessage={sendMessage}
+                  setInitialMessages={setInitialMessages}
+                  handleRequest={handleRequest}
+                />
+              }
+            />
+          </Routes>
+        </div>
       )}
     </div>
   );

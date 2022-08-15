@@ -37,6 +37,8 @@
   background: #393f49;
   width: 600px;
   height: 800px;
+  display: flex;
+  flex-direction: column;
 }
 
 .message {
@@ -49,10 +51,10 @@
 }
 
 .messageView {
-  height: 750px;
+  height: calc(100vh - 230px);
   display: flex;
   flex-direction: column;
-  justify-content: end;
+  overflow-y: auto;
 }
 .left {
   text-align: left;
