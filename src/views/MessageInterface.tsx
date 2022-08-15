@@ -87,7 +87,10 @@ export const MessageInterface = ({
     });
     console.log(messagesRes);
     setInitialMessages({
-      initialMessages: [...messagesRes.messages, ...(messages[groupId] || [])],
+      initialMessages: [
+        ...messagesRes.messages.reverse(),
+        ...(messages[groupId] || []),
+      ],
       groupId,
     });
   };
