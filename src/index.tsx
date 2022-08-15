@@ -18,13 +18,9 @@ const root = ReactDOM.createRoot(
 Amplify.configure(awsExports);
 
 root.render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <Authenticator>
-        {({ signOut }) => <App signOut={signOut} />}
-      </Authenticator>
-    </BrowserRouter>
-  </React.StrictMode>
+  <BrowserRouter>
+    <Authenticator>{({ signOut }) => <App signOut={signOut} />}</Authenticator>
+  </BrowserRouter>
 );
 
 // If you want to start measuring performance in your app, pass a function

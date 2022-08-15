@@ -19,15 +19,18 @@ function App(props: { signOut: ((data?: any) => void) | undefined }) {
   >([]);
 
   const websocketConnect = async () => {
+    if (socket) return;
     const user = await Auth.currentSession();
     const token = user.getIdToken().getJwtToken();
 
     const ws = new WebSocket(websocketUrl + `?token=${token}`);
 
     setSocket(ws);
+    console.log("createing websocket Fn");
   };
 
   useEffect(() => {
+    console.log("createing websocket Use Effect");
     websocketConnect();
   }, []);
 
@@ -71,7 +74,8 @@ function App(props: { signOut: ((data?: any) => void) | undefined }) {
           toast(`unrecognised message type: ${messageData.type}`);
       }
     } catch (e) {
-      toast("unable to parse the event");
+      console.log("error in event listener", e);
+      //toast("unable to parse the event");
     }
   });
   socket?.addEventListener("close", function (event) {
@@ -162,6 +166,7 @@ function App(props: { signOut: ((data?: any) => void) | undefined }) {
             <Link to="">
               <button>Home</button>
             </Link>
+            <button onClick={props.signOut}>Sign Out</button>
           </nav>
           <Routes>
             <Route

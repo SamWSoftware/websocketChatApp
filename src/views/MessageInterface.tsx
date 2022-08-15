@@ -151,7 +151,6 @@ export const MessageInterface = ({
       </div>
       <div className="messageView">
         {(messages[id!] || []).map((data) => {
-          console.log({ messageData: data });
           if (data.type == "message" && data.mine) {
             return <div className={`message right`}>{data.message}</div>;
           } else {
