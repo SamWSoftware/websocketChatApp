@@ -25,7 +25,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "start:dev": "REACT_APP_WS_URL=wss://73vv9d9o1l.execute-api.eu-central-1.amazonaws.com/dev REACT_APP_API_URL=https://ppuu82cih7.execute-api.eu-central-1.amazonaws.com/dev npm start"
+    "start:dev": "REACT_APP_WS_URL=wss://sryglt413f.execute-api.eu-central-1.amazonaws.com/dev REACT_APP_API_URL=https://kmuto8u8e3.execute-api.eu-central-1.amazonaws.com/dev npm start"
   },
   "eslintConfig": {
     "extends": [

@@ -52,6 +52,8 @@ function App(props: { signOut: ((data?: any) => void) | undefined }) {
     try {
       const messageData = JSON.parse(event.data);
       console.log("messageData", messageData);
+      if (messageData.message === "Internal server error") return;
+
       switch (messageData.type) {
         case "err":
           toast(messageData.message);
@@ -111,7 +113,7 @@ function App(props: { signOut: ((data?: any) => void) | undefined }) {
     setMessages({
       ...messages,
       [groupId]: [
-        ...messages[groupId],
+        ...(messages[groupId] || []),
         { message, mine: true, type: "message" },
       ],
     });
